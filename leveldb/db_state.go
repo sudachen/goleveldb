@@ -97,6 +97,7 @@ func (db *DB) mpoolGet(n int) *memDB {
 
 func (db *DB) mpoolDrain() {
 	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:
@@ -105,11 +106,12 @@ func (db *DB) mpoolDrain() {
 			default:
 			}
 		case <-db.closeC:
-			ticker.Stop()
+			t := time.NewTimer(time.Second)
+			defer t.Stop()
 			// Make sure the pool is drained.
 			select {
 			case <-db.memPool:
-			case <-time.After(time.Second):
+			case <-t.C:
 			}
 			close(db.memPool)
 			return
